@@ -1,18 +1,25 @@
-'use client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
-// Create a client
-const queryClient = new QueryClient();
-// This layout component can be used with React state, context and more as it is a client component.
+'use client'
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from 'react-hot-toast'
+import Sidebar from './components/Sidebar'
+
+const queryClient = new QueryClient()
+
 export const ClientLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <main className="flex-1 bg-zinc-50">
-      <div className="">
-        <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <div className="flex min-h-screen bg-zinc-50">
+        {/* ===== Sidebar ===== */}
+        <Sidebar />
+
+        {/* ===== Main Content ===== */}
+        <main className="flex-1 overflow-y-auto">
           {children}
-        </QueryClientProvider>
+        </main>
+
         <Toaster />
       </div>
-    </main>
-  );
-};
+    </QueryClientProvider>
+  )
+}

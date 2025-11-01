@@ -30,7 +30,7 @@ export default async function RootLayout({
       <head />
       <body>
         <div className="flex flex-col min-h-screen bg-white dark:bg-gray-900">
-          <ExternalNavigation />
+          {/* <ExternalNavigation /> */}
           <ClientLayout>{children}</ClientLayout>
           {/* <Footer /> */}
         </div>

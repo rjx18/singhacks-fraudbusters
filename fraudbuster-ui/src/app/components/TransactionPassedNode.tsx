@@ -99,7 +99,7 @@ export default function TransactionPassedNode({
     >
       <div className="flex flex-col items-center text-center space-y-2">
         {icons[state]}
-        <h6 className="font-semibold text-[9pt]">{label}</h6>
+        {state === 'passed' && <h6 className="font-semibold text-[9pt]">{label}</h6>}
 
         {state === 'passed' && (
           <div className="text-xs text-green-700 font-medium">

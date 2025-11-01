@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight, ChevronRightIcon } from 'lucide-react'
 import { DateRange } from 'react-day-picker'
 import { cn } from '@/lib/utils'
 import AddTransactionDialog from './AddTransactionDialog'
+import TransactionsHeader from './AMLTransactionsHeader'
 
 type AMLStatus = 'Fraud Detected' | 'Need Advise' | 'Success'
 
@@ -97,203 +98,201 @@ export default function TransactionsClient({ transactions, pagination, onNextPag
   }
 
   return (
-    <div className="p-6 space-y-4">
-      {/* ===== Header ===== */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-semibold text-zinc-800">AML Monitor</h1>
-        <AddTransactionDialog />
-      </div>
+    <div>
+      <TransactionsHeader />
+      <div className="p-6 space-y-4">
 
-      {/* ===== Filter Bar ===== */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <Select value={jurisdiction} onValueChange={setJurisdiction}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Jurisdiction" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All</SelectItem>
-            {[...new Set(transactions.map((t) => t.variables?.booking_jurisdiction))].map(
-              (j) => (
-                <SelectItem key={j ?? 'Unknown'} value={j ?? 'Unknown'}>
-                  {j ?? 'Unknown'}
-                </SelectItem>
-              )
-            )}
-          </SelectContent>
-        </Select>
+        {/* ===== Filter Bar ===== */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select value={jurisdiction} onValueChange={setJurisdiction}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Jurisdiction" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All</SelectItem>
+              {[...new Set(transactions.map((t) => t.variables?.booking_jurisdiction))].map(
+                (j) => (
+                  <SelectItem key={j ?? 'Unknown'} value={j ?? 'Unknown'}>
+                    {j ?? 'Unknown'}
+                  </SelectItem>
+                )
+              )}
+            </SelectContent>
+          </Select>
 
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as any)}
-        >
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All</SelectItem>
-            <SelectItem value="Fraud Detected">Fraud Detected</SelectItem>
-            <SelectItem value="Need Advise">Need Advise</SelectItem>
-            <SelectItem value="Success">Success</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as any)}
+          >
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All</SelectItem>
+              <SelectItem value="Fraud Detected">Fraud Detected</SelectItem>
+              <SelectItem value="Need Advise">Need Advise</SelectItem>
+              <SelectItem value="Success">Success</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Input
-          type="number"
-          placeholder="Amount ≥"
-          value={amountMin}
-          onChange={(e) => setAmountMin(e.target.value)}
-          className="w-[120px]"
-        />
-      </div>
-
-      {/* ===== Selection Toolbar ===== */}
-      {selected.length > 0 && (
-        <div className="flex justify-between items-center rounded-md border p-2 bg-zinc-50 text-sm">
-          <div>{selected.length} selected</div>
-          <div className="flex gap-2">
-            <Button variant="secondary" size="sm">Assign</Button>
-            <Button variant="secondary" size="sm">Mark Reviewed</Button>
-            <Button variant="secondary" size="sm">Open in Case</Button>
-          </div>
+          <Input
+            type="number"
+            placeholder="Amount ≥"
+            value={amountMin}
+            onChange={(e) => setAmountMin(e.target.value)}
+            className="w-[120px]"
+          />
         </div>
-      )}
 
-      {/* ===== Transactions Table ===== */}
-      <Card className="border-zinc-200 shadow-sm">
-        <CardContent className="overflow-x-auto p-0">
-          <table className="min-w-full text-[13px] border-collapse">
-            <thead className="bg-zinc-50 border-b text-zinc-500 font-semibold">
-              <tr>
-                <th className="py-2 px-3">
-                  <Checkbox
-                    checked={selected.length === filtered.length && filtered.length > 0}
-                    onCheckedChange={(v) => toggleSelectAll(!!v)}
-                  />
-                </th>
-                <th className="py-2 px-3 text-left">ID / Time</th>
-                <th className="py-2 px-3 text-left">Client</th>
-                <th className="py-2 px-3 text-left">Amount</th>
-                <th className="py-2 px-3 text-left">Jurisdiction</th>
-                <th className="py-2 px-3 text-left">Regulator</th>
-                <th className="py-2 px-3 text-left">Flags</th>
-                <th className="py-2 px-3 text-left">Rule Hits</th>
-                <th className="py-2 px-3 text-left">Risk</th>
-                <th className="py-2 px-3 text-left">Status</th>
-                <th className="py-2 px-3 text-right"></th>
-              </tr>
-            </thead>
+        {/* ===== Selection Toolbar ===== */}
+        {selected.length > 0 && (
+          <div className="flex justify-between items-center rounded-md border p-2 bg-zinc-50 text-sm">
+            <div>{selected.length} selected</div>
+            <div className="flex gap-2">
+              <Button variant="secondary" size="sm">Assign</Button>
+              <Button variant="secondary" size="sm">Mark Reviewed</Button>
+              <Button variant="secondary" size="sm">Open in Case</Button>
+            </div>
+          </div>
+        )}
 
-            <tbody>
-              {filtered.map((t) => (
-                <tr
-                  key={t.id}
-                  className={cn(
-                    'border-b transition hover:bg-zinc-50',
-                    selected.includes(t.id) && 'bg-blue-50'
-                  )}
-                >
-                  <td className="py-2 px-3">
+        {/* ===== Transactions Table ===== */}
+        <Card className="border-zinc-200 shadow-sm">
+          <CardContent className="overflow-x-auto p-0">
+            <table className="min-w-full text-[13px] border-collapse">
+              <thead className="bg-zinc-50 border-b text-zinc-500 font-semibold">
+                <tr>
+                  <th className="py-2 px-3">
                     <Checkbox
-                      checked={selected.includes(t.id)}
-                      onCheckedChange={() => toggleSelect(t.id)}
+                      checked={selected.length === filtered.length && filtered.length > 0}
+                      onCheckedChange={(v) => toggleSelectAll(!!v)}
                     />
-                  </td>
-                  <td className="py-2 px-3 font-mono text-[12px]">
-                    {t.id}
-                    <div className="text-xs text-zinc-500">{t.date}</div>
-                  </td>
-                  <td className="py-2 px-3">{t.variables?.originator_country ?? '-'}</td>
-                  <td className="py-2 px-3">
-                    {t.variables?.amount
-                      ? Number(t.variables.amount).toLocaleString()
-                      : '-'}
-                  </td>
-                  <td className="py-2 px-3">{t.variables?.booking_jurisdiction ?? '-'}</td>
-                  <td className="py-2 px-3">{t.variables?.regulator ?? '—'}</td>
-                  <td className="py-2 px-3">
-                    {t.variables?.flags?.length ? (
-                      <div className="flex flex-wrap gap-1">
-                        {t.variables.flags.map((flag) => (
-                          <Badge
-                            key={flag}
-                            className="bg-red-100 text-red-700 border border-red-200 text-[11px]"
-                          >
-                            {flag}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-zinc-400">—</span>
-                    )}
-                  </td>
+                  </th>
+                  <th className="py-2 px-3 text-left">ID / Time</th>
+                  <th className="py-2 px-3 text-left">Client</th>
+                  <th className="py-2 px-3 text-left">Amount</th>
+                  <th className="py-2 px-3 text-left">Jurisdiction</th>
+                  <th className="py-2 px-3 text-left">Regulator</th>
+                  <th className="py-2 px-3 text-left">Flags</th>
+                  <th className="py-2 px-3 text-left">Rule Hits</th>
+                  <th className="py-2 px-3 text-left">Risk</th>
+                  <th className="py-2 px-3 text-left">Status</th>
+                  <th className="py-2 px-3 text-right"></th>
+                </tr>
+              </thead>
 
-                  <td className="py-2 px-3">
-                    {t.variables?.rule_hits?.length ? (
-                      <div className="flex flex-wrap gap-1">
-                        {[...t.variables.rule_hits]
-                          .sort((a, b) => a.localeCompare(b))
-                          .map((hit) => (
+              <tbody>
+                {filtered.map((t) => (
+                  <tr
+                    key={t.id}
+                    className={cn(
+                      'border-b transition hover:bg-zinc-50',
+                      selected.includes(t.id) && 'bg-blue-50'
+                    )}
+                  >
+                    <td className="py-2 px-3">
+                      <Checkbox
+                        checked={selected.includes(t.id)}
+                        onCheckedChange={() => toggleSelect(t.id)}
+                      />
+                    </td>
+                    <td className="py-2 px-3 font-mono text-[12px]">
+                      {t.id}
+                      <div className="text-xs text-zinc-500">{t.date}</div>
+                    </td>
+                    <td className="py-2 px-3">{t.variables?.originator_country ?? '-'}</td>
+                    <td className="py-2 px-3">
+                      {t.variables?.amount
+                        ? Number(t.variables.amount).toLocaleString()
+                        : '-'}
+                    </td>
+                    <td className="py-2 px-3">{t.variables?.booking_jurisdiction ?? '-'}</td>
+                    <td className="py-2 px-3">{t.variables?.regulator ?? '—'}</td>
+                    <td className="py-2 px-3">
+                      {t.variables?.flags?.length ? (
+                        <div className="flex flex-wrap gap-1">
+                          {t.variables.flags.map((flag) => (
                             <Badge
-                              key={hit}
-                              className="bg-blue-100 text-blue-700 border border-blue-200 text-[11px]"
+                              key={flag}
+                              className="bg-red-100 text-red-700 border border-red-200 text-[11px]"
                             >
-                              {hit}
+                              {flag}
                             </Badge>
                           ))}
-                      </div>
-                    ) : (
-                      <span className="text-zinc-400">—</span>
-                    )}
-                  </td>
+                        </div>
+                      ) : (
+                        <span className="text-zinc-400">—</span>
+                      )}
+                    </td>
 
-                  <td className="py-2 px-3">—</td>
-                  <td className="py-2 px-3">{getStatusBadge(t.status)}</td>
-                  <td className="py-2 px-3 text-right">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => router.push(`/aml/tx/${t.id}`)}
-                      className="text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 border"
-                    >
-                      Details
-                      <ChevronRightIcon />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+                    <td className="py-2 px-3">
+                      {t.variables?.rule_hits?.length ? (
+                        <div className="flex flex-wrap gap-1">
+                          {[...t.variables.rule_hits]
+                            .sort((a, b) => a.localeCompare(b))
+                            .map((hit) => (
+                              <Badge
+                                key={hit}
+                                className="bg-blue-100 text-blue-700 border border-blue-200 text-[11px]"
+                              >
+                                {hit}
+                              </Badge>
+                            ))}
+                        </div>
+                      ) : (
+                        <span className="text-zinc-400">—</span>
+                      )}
+                    </td>
 
-      {/* ===== Pagination ===== */}
-      {pagination && (
-        <div className="flex justify-end items-center gap-3 text-sm text-zinc-600">
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={!pagination.startCursor}
-            onClick={onPrevPage}
-            className="h-7 w-7"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
+                    <td className="py-2 px-3">—</td>
+                    <td className="py-2 px-3">{getStatusBadge(t.status)}</td>
+                    <td className="py-2 px-3 text-right">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => router.push(`/aml/tx/${t.id}`)}
+                        className="text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 border"
+                      >
+                        Details
+                        <ChevronRightIcon />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
 
-          <span>
-            Showing {transactions.length} of {pagination.totalItems}
-          </span>
+        {/* ===== Pagination ===== */}
+        {pagination && (
+          <div className="flex justify-end items-center gap-3 text-sm text-zinc-600">
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={!pagination.startCursor}
+              onClick={onPrevPage}
+              className="h-7 w-7"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
 
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={!pagination.endCursor}
-            onClick={onNextPage}
-            className="h-7 w-7"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
+            <span>
+              Showing {transactions.length} of {pagination.totalItems}
+            </span>
+
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={!pagination.endCursor}
+              onClick={onNextPage}
+              className="h-7 w-7"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -31,7 +31,7 @@ export default function AMLFlowChart({ transactionId, nodes, edges, variables }:
     []
   )
 
-  const defaultViewport = { x: 500, y: 50, zoom: 0.75 }
+  const defaultViewport = { x: 100, y: 200, zoom: 1 }
 
   return (
     <main className="relative w-screen h-screen bg-zinc-100">

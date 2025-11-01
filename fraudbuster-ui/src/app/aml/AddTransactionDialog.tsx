@@ -71,7 +71,7 @@ export default function AddTransactionDialog() {
   return (
     <>
       <Button
-        className="bg-blue-600 hover:bg-blue-700 text-white"
+        className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl"
         onClick={() => setOpen(true)}
       >
         Add Transactions
