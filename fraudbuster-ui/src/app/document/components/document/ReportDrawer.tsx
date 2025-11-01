@@ -1,17 +1,8 @@
 "use client";
 import React from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { DocumentRow, Prospect } from "./types";
-
-function Pill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="px-2 py-1 rounded-lg text-xs bg-neutral-100 text-neutral-700">{children}</span>
-  );
-}
-
-function RiskPill({ score }: { score: number }) {
-  const cls = score >= 80 ? "bg-rose-100 text-rose-700" : score >= 60 ? "bg-amber-100 text-amber-700" : score >= 30 ? "bg-yellow-50 text-yellow-700" : "bg-green-100 text-green-700";
-  return <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${cls}`}>{score}</span>;
-}
 
 export function ReportDrawer({
   open,
@@ -26,67 +17,114 @@ export function ReportDrawer({
 }) {
   if (!open || !doc) return null;
 
+  const markdownReport = doc.processingResult?.validation?.report;
+  const hasReport = markdownReport && doc.status === "Completed";
+
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
-      <div className="absolute right-0 top-0 h-full w-full sm:w-[560px] bg-white shadow-xl border-l">
-        <div className="p-4 border-b flex items-center justify-between">
+      <div className="absolute right-0 top-0 h-full w-full sm:w-[800px] bg-white shadow-xl border-l overflow-hidden flex flex-col">
+        <div className="p-4 border-b flex items-center justify-between flex-shrink-0">
           <h3 className="text-base font-semibold">{doc.id} · Document Report</h3>
-          <button className="rounded-xl border px-3 py-1.5 text-xs bg-white" onClick={onClose}>
+          <button className="rounded-xl border px-3 py-1.5 text-xs bg-white hover:bg-gray-50" onClick={onClose}>
             Close
           </button>
         </div>
 
-        <div className="p-4 space-y-4 text-sm">
-          <section className="grid grid-cols-2 gap-3">
-            <Field label="Prospect" value={`${prospect.name} (${prospect.id})`} />
-            <Field label="File Name" value={doc.name} />
-            <Field label="Type" value={doc.type} />
-            <Field label="Pages" value={doc.pages || "—"} />
-            <Field label="Uploaded" value={new Date(doc.uploadedAt).toLocaleString()} />
-            <Field label="Status" value={<Pill>{doc.status}</Pill>} />
-            <Field label="Risk" value={<RiskPill score={doc.risk} />} />
-          </section>
-
-          <section className="rounded-xl border p-3">
-            <div className="text-sm font-medium">Checks</div>
-            <ul className="mt-2 list-disc pl-5 text-neutral-700">
-              <li>OCR extracted entities (names, dates, amounts) — <b>OK</b></li>
-              <li>Format validation (headers, sections, fonts) — <b>{doc.status === "Issues Found" ? "Issues detected" : "OK"}</b></li>
-              <li>Image forensics (metadata, noise, splice) — <b>{doc.risk > 60 ? "Anomalies" : "Clear"}</b></li>
-              <li>Template match (Home Purchase Agreement v2) — <b>{doc.type === "Agreement" ? "Deviation" : "N/A"}</b></li>
-            </ul>
-          </section>
-
-          <section className="rounded-xl border p-3">
-            <div className="text-sm font-medium">Audit Trail</div>
-            <ul className="mt-2 text-neutral-700 space-y-1">
-              <li>2025-11-01 09:12 — Uploaded by John Wong</li>
-              <li>2025-11-01 09:13 — OCR complete</li>
-              <li>2025-11-01 09:15 — Forensics queued</li>
-              <li>2025-11-01 09:18 — Validation finished</li>
-            </ul>
-          </section>
-
-          <section className="rounded-xl border p-3">
-            <div className="text-sm font-medium">Actions</div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button className="rounded-xl border px-3 py-1.5 bg-white text-xs">Mark Verified</button>
-              <button className="rounded-xl border px-3 py-1.5 bg-white text-xs">Open Case</button>
-              <button className="rounded-xl border px-3 py-1.5 bg-white text-xs">Download Report</button>
+        <div className="flex-1 overflow-y-auto">
+          {/* Markdown Report Section */}
+          {hasReport ? (
+            <div className="p-6">
+              <div className="prose prose-slate max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {markdownReport}
+                </ReactMarkdown>
+              </div>
             </div>
-          </section>
+          ) : doc.status === "Processing" ? (
+            <div className="p-6 text-center">
+              <div className="text-lg font-medium text-gray-700">Processing Document...</div>
+              <div className="text-sm text-gray-500 mt-2">
+                Document is being analyzed. Report will appear here when complete.
+              </div>
+              <div className="mt-4">
+                <div className="inline-block w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            </div>
+          ) : doc.status === "Error" ? (
+            <div className="p-6 text-center">
+              <div className="text-lg font-medium text-red-700">Processing Error</div>
+              <div className="text-sm text-red-500 mt-2">
+                {markdownReport || "An error occurred while processing this document."}
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 text-center">
+              <div className="text-lg font-medium text-gray-700">No Report Available</div>
+              <div className="text-sm text-gray-500 mt-2">
+                Document has not been processed yet.
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom sections - Audit Trail and Actions */}
+        <div className="border-t bg-gray-50 flex-shrink-0">
+          <div className="p-4 space-y-4 text-sm">
+            <section className="rounded-xl border bg-white p-3">
+              <div className="text-sm font-medium text-gray-900">Audit Trail</div>
+              <ul className="mt-2 text-gray-700 space-y-1">
+                <li>{new Date(doc.uploadedAt).toLocaleString()} — Uploaded by {prospect.owner}</li>
+                {doc.status === "Processing" && (
+                  <li>{new Date().toLocaleString()} — Document processing in progress</li>
+                )}
+                {doc.status === "Completed" && (
+                  <li>{new Date().toLocaleString()} — Document analysis completed</li>
+                )}
+                {doc.status === "Error" && (
+                  <li>{new Date().toLocaleString()} — Processing failed</li>
+                )}
+              </ul>
+            </section>
+
+            <section className="rounded-xl border bg-white p-3">
+              <div className="text-sm font-medium text-gray-900">Actions</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button 
+                  disabled={doc.status !== "Completed"}
+                  className={`rounded-xl border px-3 py-1.5 text-xs transition-colors ${
+                    doc.status === "Completed"
+                      ? "bg-white hover:bg-gray-50 text-gray-700"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  Mark Verified
+                </button>
+                <button 
+                  disabled={doc.status !== "Completed"}
+                  className={`rounded-xl border px-3 py-1.5 text-xs transition-colors ${
+                    doc.status === "Completed"
+                      ? "bg-white hover:bg-gray-50 text-gray-700"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  Open Case
+                </button>
+                <button 
+                  disabled={doc.status !== "Completed"}
+                  className={`rounded-xl border px-3 py-1.5 text-xs transition-colors ${
+                    doc.status === "Completed"
+                      ? "bg-white hover:bg-gray-50 text-gray-700"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  Download Report
+                </button>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div>
-      <div className="text-xs text-neutral-500">{label}</div>
-      <div className="mt-0.5 text-neutral-800">{value}</div>
     </div>
   );
 }
