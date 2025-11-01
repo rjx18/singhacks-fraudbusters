@@ -140,13 +140,13 @@ function extractTextFromChildren(children: ReactNode): string[] {
   let textArray: string[] = [];
 
   // Recursively process each child
-  Children.forEach(children, (child) => {
+  Children.forEach(children, (child: any) => {
     if (typeof child === 'string') {
       // If it's a string, add it directly
       textArray.push(child.trim());
-    } else if (isValidElement(child) && child.props && child.props.children) {
+    } else if (isValidElement(child) && child.props && (child.props as any).children) {
       // If it has children, recursively extract the text
-      textArray.push(...extractTextFromChildren(child.props.children));
+      textArray.push(...extractTextFromChildren((child.props as any).children));
     }
   });
 
@@ -205,14 +205,14 @@ interface ElementProps {
 }
 
 interface ElementData {
-  type?: keyof JSX.IntrinsicElements | JSXElementConstructor<any>;
+  type?: string | React.ComponentType<any>;
   component?: string; // Add a `component` field to represent custom components
   key?: React.Key | null;
   ref?: React.Ref<any> | null;
   props: ElementProps;
 }
 
-const componentMap: { [key: string]: JSXElementConstructor<any> } = {
+const componentMap: { [key: string]: React.ComponentType<any> } = {
   // AzureLogo,
   // AWSLogo
   // Add other components here as needed
@@ -276,7 +276,7 @@ function parseJSX(element: React.ReactNode): any {
 
   // Parse the props, handling `children` separately
   const parsedProps: any = {};
-  Object.entries(props).forEach(([propName, propValue]) => {
+  Object.entries(props as Record<string, any>).forEach(([propName, propValue]) => {
     if (propName === 'children') {
       // Recursively parse children
       parsedProps[propName] = Array.isArray(propValue)
