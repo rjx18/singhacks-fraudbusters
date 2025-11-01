@@ -11,6 +11,8 @@ import AINode from '@/app/components/AINode'
 import ReviewNode from '@/app/components/ReviewNode'
 import TransactionPassedNode from '@/app/components/TransactionPassedNode'
 import ReviewPanel from '@/app/components/ReviewPanel'
+import AIReportPanel from '@/app/components/AIPanel'
+import DataPanel from '@/app/components/DataPanel'
 
 interface AMLFlowChartProps {
   transactionId: string
@@ -31,7 +33,9 @@ export default function AMLFlowChart({ transactionId, nodes, edges, variables }:
     []
   )
 
-  const defaultViewport = { x: 100, y: 200, zoom: 1 }
+  const defaultViewport = { x: 400, y: 200, zoom: 1 }
+
+  console.log(variables)
 
   return (
     <main className="relative w-screen h-screen bg-zinc-100">
@@ -55,6 +59,14 @@ export default function AMLFlowChart({ transactionId, nodes, edges, variables }:
 
       <div className="absolute top-4 right-4 z-[9999]">
         <ReviewPanel transactionId={transactionId} variables={variables} />
+      </div>
+
+      <div className="absolute top-4 right-4 z-[9999]">
+        <AIReportPanel variables={variables} />
+      </div>
+
+      <div className="absolute top-4 left-4 z-[9999]">
+        <DataPanel variables={variables} />
       </div>
     </main>
   )

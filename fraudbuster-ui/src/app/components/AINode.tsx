@@ -10,6 +10,7 @@ import {
   faExclamationTriangle,
   faBolt,
   faCircleXmark,
+  faEllipsisH,
 } from '@fortawesome/free-solid-svg-icons'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { classNames } from '@/utils'
@@ -113,9 +114,9 @@ export default function AINode({
           />
         ) : (
           <FontAwesomeIcon
-            icon={faExclamationTriangle}
-            className="text-red-500 w-4 h-4"
-            title="Error running AI Advisor"
+            icon={faEllipsisH}
+            className="text-amber-500 w-4 h-4"
+            title="Queued"
           />
         )}
       </div>
@@ -163,8 +164,8 @@ export default function AINode({
           </div>
         </div>
       ) : (
-        <div className="mt-2 p-2 rounded-md bg-red-50 border border-red-300 text-red-700 text-xs text-center">
-          Error running AI Advisor
+        <div className="mt-2 p-2 rounded-md bg-amber-50 border border-amber-300 text-amber-700 text-xs text-center">
+          Queued...
         </div>
       )}
 

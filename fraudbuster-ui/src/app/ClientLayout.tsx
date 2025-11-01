@@ -9,7 +9,7 @@ const queryClient = new QueryClient()
 export const ClientLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen bg-zinc-50">
+      <div className="flex min-h-screen bg-zinc-50 overflow-hidden">
         {/* ===== Sidebar ===== */}
         <Sidebar />
 

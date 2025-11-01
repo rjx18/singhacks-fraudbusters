@@ -12,6 +12,7 @@ import {
   faUserCheck,
   faUserXmark,
   faQuestionCircle,
+  faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { classNames } from '@/utils'
@@ -92,7 +93,7 @@ export default function ReviewNode({
 
   const stateStyles: Record<string, string> = {
     'no-assessment': 'bg-zinc-50 border-zinc-300 text-zinc-600',
-    cleared: 'bg-green-50 border-green-300 text-green-800',
+    cleared: 'bg-zinc-50/50 border-zinc-300/50 text-zinc-800/50',
     pending: 'bg-amber-50 border-amber-300 text-amber-800',
     reviewed: review?.approve_tx
       ? 'bg-green-50 border-green-300 text-green-800'
@@ -101,7 +102,7 @@ export default function ReviewNode({
 
   const icons: Record<string, React.ReactNode> = {
     'no-assessment': <FontAwesomeIcon icon={faQuestionCircle} className="text-zinc-400 w-4 h-4" />,
-    cleared: <FontAwesomeIcon icon={faCheckCircle} className="text-green-600 w-4 h-4" />,
+    cleared: <FontAwesomeIcon icon={faXmark} className="text-zinc-600 w-4 h-4" />,
     pending: <FontAwesomeIcon icon={faExclamationTriangle} className="text-amber-600 w-4 h-4" />,
     reviewed: review?.approve_tx ? (
       <FontAwesomeIcon icon={faUserCheck} className="text-green-600 w-4 h-4" />
@@ -134,8 +135,8 @@ export default function ReviewNode({
       )}
 
       {state === 'cleared' && (
-        <div className="text-xs text-center p-2 rounded-md bg-green-100/70 border border-green-200">
-          <FontAwesomeIcon icon={faCheckCircle} className="mr-1 text-green-700" />
+        <div className="text-xs text-center p-2 rounded-md bg-zinc-100/50 border border-zinc-200">
+          <FontAwesomeIcon icon={faCheckCircle} className="mr-1 text-zinc-700" />
           No review needed — AI cleared
         </div>
       )}

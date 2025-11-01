@@ -79,6 +79,32 @@ async function getVariables(token: string, processInstanceKey: string) {
   return data?.items ?? []
 }
 
+async function getVariableByKey(token: string, variableKey: string) {
+  const url = `${CAMUNDA_OPERATE_URL}/v2/variables/search`
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      filter: { variableKey },
+      page: { from: 0, limit: 1 },
+    }),
+  })
+
+  if (!res.ok) {
+    const errText = await res.text()
+    console.error(`[Camunda] Failed to fetch variable by key ${variableKey}:`, errText)
+    throw new Error(`Variable fetch failed (${res.status})`)
+  }
+
+  const data = await res.json()
+  return data?.items?.[0] ?? null
+}
+
 // --- Main GET handler ---
 
 export async function GET(_: Request, { params }: { params: Promise<{ transactionId: string }> }) {
@@ -94,9 +120,19 @@ export async function GET(_: Request, { params }: { params: Promise<{ transactio
       getVariables(token, transactionId),
     ])
 
+    const resolvedVariables = await Promise.all(
+      variables.map(async (v: any) => {
+        if (v.isTruncated && v.variableKey) {
+          const fullVar = await getVariableByKey(token, v.variableKey)
+          return fullVar ? { ...v, value: fullVar.value, isTruncated: false } : v
+        }
+        return v
+      })
+    )
+
     // Convert variables list to key/value map
     const variableMap = Object.fromEntries(
-      variables.map((v: any) => [v.name, v.isTruncated ? "(truncated)" : v.value])
+      resolvedVariables.map((v: any) => [v.name, v.value])
     )
 
     // Try to parse “data” field if it contains a JSON object

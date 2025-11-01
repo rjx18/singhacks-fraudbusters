@@ -45,7 +45,7 @@ async function getAccessToken() {
 async function getProcessInstances(token: string, after?: string, before?: string) {
   const url = `${CAMUNDA_OPERATE_URL}/v2/process-instances/search`;
 
-  const page: Record<string, any> = { limit: 20 }; // adjust as needed
+  const page: Record<string, any> = { limit: 10 }; // adjust as needed
   if (after) page.after = after;
   if (before) page.before = before;
 

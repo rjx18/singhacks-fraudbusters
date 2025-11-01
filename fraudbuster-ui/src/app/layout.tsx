@@ -28,7 +28,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${roboto_mono.variable}`}>
       <head />
-      <body>
+      <body className='overflow-hidden'>
         <div className="flex flex-col min-h-screen bg-white dark:bg-gray-900">
           {/* <ExternalNavigation /> */}
           <ClientLayout>{children}</ClientLayout>

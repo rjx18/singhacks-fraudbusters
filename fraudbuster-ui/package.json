@@ -103,6 +103,7 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^3.0.6",
     "recharts": "^3.3.0",
+    "remark-gfm": "^4.0.1",
     "rooks": "^9.3.0",
     "semantic-release": "^25.0.1",
     "server-only": "^0.0.1",
