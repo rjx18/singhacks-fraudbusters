@@ -1,10 +1,13 @@
-'use client';
-import { T } from '@/components/ui/Typography';
-import Link from 'next/link';
+'use client'
+import { T } from '@/components/ui/Typography'
+import Link from 'next/link'
 
 export const ExternalNavigation = () => {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pointer-events-auto"
+      style={{ height: 'auto' }}
+    >
       <div className="container mx-auto px-4 lg:px-6 h-16 flex items-center">
         <Link className="flex items-center space-x-2" href="/">
           <div className="flex items-center justify-center">
@@ -17,43 +20,10 @@ export const ExternalNavigation = () => {
             Dilly
           </T.H3>
         </Link>
-        {/* <nav className="ml-auto flex items-center gap-2 sm:gap-4">
-          <Link
-            className="text-sm hidden lg:inline-flex font-medium text-muted-foreground hover:text-foreground transition-colors"
-            href="#"
-          >
-            Features
-          </Link>
-          <Link
-            className="text-sm hidden lg:inline-flex font-medium text-muted-foreground hover:text-foreground transition-colors"
-            href="#"
-          >
-            Pricing
-          </Link>
-          <Link
-            className="text-sm hidden lg:inline-flex font-medium text-muted-foreground hover:text-foreground transition-colors"
-            href="#"
-          >
-            About
-          </Link>
-          <Button variant="default" asChild>
-            <Link
-              href="https://usenextbase.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <span className="hidden sm:inline">
-                Premium Nextbase Starter Kits
-              </span>
-              <span className="sm:hidden">Premium</span>
-              <ExternalLink className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </nav> */}
       </div>
     </header>
-  );
-};
+  )
+}
 
 function MountainIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -71,5 +41,5 @@ function MountainIcon(props: React.SVGProps<SVGSVGElement>) {
     >
       <path d="m8 3 4 8 5-5 5 15H2L8 3z" />
     </svg>
-  );
+  )
 }

@@ -23,9 +23,13 @@ type EdgeProps = {
  * Get edge color based on data
  */
 function getColor(data?: any) {
-  if (data?.color === 'inbound') return colors.cyan[600]
-  if (data?.color === 'outbound') return colors.red[600]
-  return colors.zinc[400]
+  const status = data?.status
+
+  if (status === 'pass') return colors.green[300]       // ✅ Passed checks
+  if (status === 'fail') return colors.red[600]         // ❌ Failed checks
+  if (status === 'needs_advice') return colors.amber[300] // ⚠️ Needs manual review / advice
+
+  return colors.zinc[400] // default neutral
 }
 
 /**

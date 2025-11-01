@@ -209,20 +209,28 @@ export const AML_NODES = [
   },
 
   // AI Advisor
-  { id: 'ai', type: 'systemNode', position: { x: 600, y: 300 }, data: { label: 'AI Advisor' } },
+  { id: 'ai', type: 'aiNode', position: { x: 600, y: 250 }, data: { label: 'AI Advisor' } },
 
   // Outcomes
-  { id: 'fraud', type: 'systemNode', position: { x: 900, y: 200 }, data: { label: 'Fraud Detected' } },
-  { id: 'advise', type: 'systemNode', position: { x: 900, y: 300 }, data: { label: 'Advise Needed' } },
-  { id: 'passed', type: 'systemNode', position: { x: 900, y: 400 }, data: { label: 'Transaction Passed' } },
+  {
+    id: "flagged",
+    type: "reviewNode",
+    position: { x: 900, y: 150 },
+    data: { label: "Flagged for Review" },
+  },
+  {
+    id: "transaction_passed",
+    type: "transactionPassedNode",
+    position: { x: 900, y: 350 },
+    data: { label: "Transaction Passed" },
+  },
 ]
-
 
 export const AML_EDGES = [
   // Start → all modules
   ...[
-    'wire','fx','pricing','sanctions','cdd','suitability','behavioral','cash',
-    'str','virtual','dataquality','purpose','channel','counterparty','record'
+    'wire', 'fx', 'pricing', 'sanctions', 'cdd', 'suitability', 'behavioral', 'cash',
+    'str', 'virtual', 'dataquality', 'channel', 'counterparty', 'record'
   ].map(id => ({
     id: `start-${id}`,
     source: 'start',
@@ -237,8 +245,8 @@ export const AML_EDGES = [
 
   // Modules → AI Advisor
   ...[
-    'wire','fx','pricing','sanctions','cdd','suitability','behavioral','cash',
-    'str','virtual','dataquality','purpose','channel','counterparty','record'
+    'wire', 'fx', 'pricing', 'sanctions', 'cdd', 'suitability', 'behavioral', 'cash',
+    'str', 'virtual', 'dataquality', 'channel', 'counterparty', 'record'
   ].map(id => ({
     id: `${id}-ai`,
     source: id,
@@ -253,10 +261,10 @@ export const AML_EDGES = [
 
   // AI Advisor → Outcomes
   {
-    id: 'ai-fraud',
+    id: 'ai-flagged',
     source: 'ai',
     sourceHandle: 'b',
-    target: 'fraud',
+    target: 'flagged',
     targetHandle: 'a',
     type: 'floating',
     className: 'customDash',
@@ -264,25 +272,14 @@ export const AML_EDGES = [
     viaJarvis: true,
   },
   {
-    id: 'ai-advise',
+    id: 'ai-transaction-passed',
     source: 'ai',
     sourceHandle: 'b',
-    target: 'advise',
+    target: 'transaction_passed',
     targetHandle: 'a',
     type: 'floating',
     className: 'customDash',
     style: { strokeWidth: 2, strokeDasharray: '7 13' },
     viaJarvis: true,
   },
-  {
-    id: 'ai-passed',
-    source: 'ai',
-    sourceHandle: 'b',
-    target: 'passed',
-    targetHandle: 'a',
-    type: 'floating',
-    className: 'customDash',
-    style: { strokeWidth: 2, strokeDasharray: '7 13' },
-    viaJarvis: true,
-  },
-];
+]

@@ -7,15 +7,20 @@ import FloatingEdge, { SourceRightEdge, TargetRightEdge } from '../../../compone
 import SystemNode from '../../../components/SystemNode'
 import InfoPanel from '../../../components/InfoPanel'
 import { useMemo } from 'react'
-import { AML_EDGES } from '@/constants/nodes'
+import AINode from '@/app/components/AINode'
+import ReviewNode from '@/app/components/ReviewNode'
+import TransactionPassedNode from '@/app/components/TransactionPassedNode'
+import ReviewPanel from '@/app/components/ReviewPanel'
 
 interface AMLFlowChartProps {
+  transactionId: string
   nodes: any[]
+  edges: any[]
   variables: Record<string, any>
 }
 
-export default function AMLFlowChart({ nodes, variables }: AMLFlowChartProps) {
-  const nodeTypes = useMemo(() => ({ systemNode: SystemNode }), [])
+export default function AMLFlowChart({ transactionId, nodes, edges, variables }: AMLFlowChartProps) {
+  const nodeTypes = useMemo(() => ({ systemNode: SystemNode, aiNode: AINode, reviewNode: ReviewNode, transactionPassedNode: TransactionPassedNode }), [])
   const edgeTypes = useMemo(
     () => ({
       custom: CustomBezierEdge,
@@ -34,7 +39,7 @@ export default function AMLFlowChart({ nodes, variables }: AMLFlowChartProps) {
         colorMode="light"
         maxZoom={4}
         nodes={nodes}
-        edges={AML_EDGES} // Replace with AML_EDGES if desired
+        edges={edges} // Replace with AML_EDGES if desired
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         defaultViewport={defaultViewport}
@@ -46,6 +51,10 @@ export default function AMLFlowChart({ nodes, variables }: AMLFlowChartProps) {
       {/* === InfoPanel === */}
       <div className="absolute top-4 right-4 z-[9999]">
         <InfoPanel variables={variables} />
+      </div>
+
+      <div className="absolute top-4 right-4 z-[9999]">
+        <ReviewPanel transactionId={transactionId} variables={variables} />
       </div>
     </main>
   )

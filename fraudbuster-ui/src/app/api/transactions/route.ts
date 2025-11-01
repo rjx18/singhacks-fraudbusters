@@ -38,16 +38,21 @@ async function getAccessToken() {
   }
 
   const data = await res.json();
-  console.log(
-    "[Camunda] Access token (truncated):",
-    data.access_token?.slice(0, 10) + "..."
-  );
   return data.access_token as string;
 }
 
-// --- 2️⃣ Fetch process instances ---
-async function getProcessInstances(token: string) {
+// --- 2️⃣ Fetch process instances with pagination ---
+async function getProcessInstances(token: string, after?: string, before?: string) {
   const url = `${CAMUNDA_OPERATE_URL}/v2/process-instances/search`;
+
+  const page: Record<string, any> = { limit: 20 }; // adjust as needed
+  if (after) page.after = after;
+  if (before) page.before = before;
+
+  const body = {
+    page,
+    sort: [{ field: "startDate", order: "DESC" }],
+  };
 
   const res = await fetch(url, {
     method: "POST",
@@ -56,10 +61,7 @@ async function getProcessInstances(token: string) {
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      page: { from: 0, limit: 50 },
-      sort: [{ field: "startDate", order: "DESC" }],
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -70,7 +72,7 @@ async function getProcessInstances(token: string) {
 
   const data = await res.json();
   console.log(`[Camunda] Found ${data?.items?.length ?? 0} process instances`);
-  return data?.items ?? [];
+  return data;
 }
 
 // --- 3️⃣ Fetch variables for a process instance ---
@@ -85,9 +87,7 @@ async function getVariablesForInstance(token: string, processInstanceKey: string
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      filter: {
-        processInstanceKey: processInstanceKey.toString(),
-      },
+      filter: { processInstanceKey: processInstanceKey.toString() },
       page: { from: 0, limit: 100 },
     }),
   });
@@ -103,12 +103,18 @@ async function getVariablesForInstance(token: string, processInstanceKey: string
 }
 
 // --- 4️⃣ Main API route ---
-export async function GET() {
+export async function GET(request: Request) {
   console.log("[API] /api/transactions called");
+
+  const { searchParams } = new URL(request.url);
+  const after = searchParams.get("after") || undefined;
+  const before = searchParams.get("before") || undefined;
 
   try {
     const token = await getAccessToken();
-    const instances = await getProcessInstances(token);
+    const data = await getProcessInstances(token, after, before);
+
+    const instances = data?.items ?? [];
 
     // Attach variables to each instance
     const transactions = await Promise.all(
@@ -134,8 +140,24 @@ export async function GET() {
       })
     );
 
-    console.log("[API] Returning", transactions.length, "transactions");
-    return NextResponse.json({ success: true, transactions });
+    const pagination = {
+      totalItems: data?.page?.totalItems ?? transactions.length,
+      hasMoreTotalItems: data?.page?.hasMoreTotalItems ?? false,
+      startCursor: data?.page?.startCursor ?? null,
+      endCursor: data?.page?.endCursor ?? null,
+    };
+
+    console.log(
+      `[API] Returning ${transactions.length} transactions (page: ${
+        pagination.startCursor ? "cursor" : "initial"
+      })`
+    );
+
+    return NextResponse.json({
+      success: true,
+      page: pagination,
+      items: transactions,
+    });
   } catch (error: any) {
     console.error("[API] Error fetching transactions:", error);
     return NextResponse.json(

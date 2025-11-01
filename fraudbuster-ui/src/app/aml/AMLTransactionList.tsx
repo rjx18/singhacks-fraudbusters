@@ -1,19 +1,24 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
+import { ChevronLeft, ChevronRight, ChevronRightIcon } from 'lucide-react'
+import { DateRange } from 'react-day-picker'
 import { cn } from '@/lib/utils'
+import AddTransactionDialog from './AddTransactionDialog'
 
 type AMLStatus = 'Fraud Detected' | 'Need Advise' | 'Success'
 
 interface AMLTransaction {
   id: string
   date: string
+  regulator?: string
   status: AMLStatus
   variables?: {
     amount?: number | string | null
@@ -21,35 +26,73 @@ interface AMLTransaction {
     booking_datetime?: string | null
     originator_country?: string | null
     beneficiary_country?: string | null
+    flags?: string[]
+    rule_hits?: string[]
   }
 }
 
 interface TransactionsClientProps {
   transactions: AMLTransaction[]
+  pagination?: {
+    totalItems: number
+    hasMore: boolean
+    startCursor?: string
+    endCursor?: string
+  }
+  onNextPage?: () => void
+  onPrevPage?: () => void
 }
 
-export default function TransactionsClient({ transactions }: TransactionsClientProps) {
-  const [statusFilter, setStatusFilter] = useState<'All' | AMLStatus>('All')
-  const [page, setPage] = useState(1)
-  const perPage = 10
+export default function TransactionsClient({ transactions, pagination, onNextPage, onPrevPage }: TransactionsClientProps) {
   const router = useRouter()
 
-  const filteredTransactions = useMemo(() => {
-    if (statusFilter === 'All') return transactions
-    return transactions.filter((t) => t.status === statusFilter)
-  }, [statusFilter, transactions])
+  // ===== Filters =====
+  const [jurisdiction, setJurisdiction] = useState('All')
+  const [statusFilter, setStatusFilter] = useState<'All' | AMLStatus>('All')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [amountMin, setAmountMin] = useState('')
+  const [selected, setSelected] = useState<string[]>([])
 
-  const totalPages = Math.ceil(filteredTransactions.length / perPage)
-  const paginated = filteredTransactions.slice((page - 1) * perPage, page * perPage)
+  // ===== Derived Data =====
+  const filtered = useMemo(() => {
+    return transactions.filter((t) => {
+      const amount = Number(t.variables?.amount ?? 0)
+      const date = new Date(t.variables?.booking_datetime ?? t.date)
+      if (jurisdiction !== 'All' && t.variables?.booking_jurisdiction !== jurisdiction) return false
+      if (statusFilter !== 'All' && t.status !== statusFilter) return false
+      if (amountMin && amount < Number(amountMin)) return false
+      if (
+        dateRange?.from &&
+        dateRange?.to &&
+        (date < dateRange.from || date > dateRange.to)
+      )
+        return false
+      return true
+    })
+  }, [transactions, jurisdiction, statusFilter, dateRange, amountMin])
 
+
+  // ===== Selection =====
+  const toggleSelect = (id: string) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
+  const toggleSelectAll = (checked: boolean) => {
+    if (checked) setSelected(filtered.map((t) => t.id))
+    else setSelected([])
+  }
+
+  // ===== Status Colors =====
   const getStatusBadge = (status: AMLStatus) => {
     switch (status) {
       case 'Fraud Detected':
-        return <Badge className="bg-red-100 text-red-700 border border-red-200">{status}</Badge>
+        return <Badge className="bg-red-100 text-red-700 border border-red-200">Needs Review</Badge>
       case 'Need Advise':
-        return <Badge className="bg-amber-100 text-amber-700 border border-amber-200">{status}</Badge>
+        return <Badge className="bg-amber-100 text-amber-700 border border-amber-200">Queued</Badge>
       case 'Success':
-        return <Badge className="bg-green-100 text-green-700 border border-green-200">{status}</Badge>
+        return <Badge className="bg-green-100 text-green-700 border border-green-200">Cleared</Badge>
     }
   }
 
@@ -58,80 +101,163 @@ export default function TransactionsClient({ transactions }: TransactionsClientP
       {/* ===== Header ===== */}
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-semibold text-zinc-800">AML Monitor</h1>
-        <Link href="/aml/add">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1">
-            <Plus className="w-4 h-4" />
-            Add Transaction
-          </Button>
-        </Link>
+        <AddTransactionDialog />
       </div>
 
       {/* ===== Filter Bar ===== */}
-      <div className="flex gap-2">
-        {['All', 'Fraud Detected', 'Need Advise', 'Success'].map((status) => (
-          <Button
-            key={status}
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setStatusFilter(status as any)
-              setPage(1)
-            }}
-            className={cn(
-              'text-sm',
-              statusFilter === status
-                ? 'bg-blue-100 border-blue-400 text-blue-700'
-                : 'text-zinc-700 hover:bg-zinc-100'
+      <div className="flex flex-wrap gap-2 items-center">
+        <Select value={jurisdiction} onValueChange={setJurisdiction}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Jurisdiction" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All</SelectItem>
+            {[...new Set(transactions.map((t) => t.variables?.booking_jurisdiction))].map(
+              (j) => (
+                <SelectItem key={j ?? 'Unknown'} value={j ?? 'Unknown'}>
+                  {j ?? 'Unknown'}
+                </SelectItem>
+              )
             )}
-          >
-            {status}
-          </Button>
-        ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as any)}
+        >
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All</SelectItem>
+            <SelectItem value="Fraud Detected">Fraud Detected</SelectItem>
+            <SelectItem value="Need Advise">Need Advise</SelectItem>
+            <SelectItem value="Success">Success</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Input
+          type="number"
+          placeholder="Amount ≥"
+          value={amountMin}
+          onChange={(e) => setAmountMin(e.target.value)}
+          className="w-[120px]"
+        />
       </div>
+
+      {/* ===== Selection Toolbar ===== */}
+      {selected.length > 0 && (
+        <div className="flex justify-between items-center rounded-md border p-2 bg-zinc-50 text-sm">
+          <div>{selected.length} selected</div>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm">Assign</Button>
+            <Button variant="secondary" size="sm">Mark Reviewed</Button>
+            <Button variant="secondary" size="sm">Open in Case</Button>
+          </div>
+        </div>
+      )}
 
       {/* ===== Transactions Table ===== */}
       <Card className="border-zinc-200 shadow-sm">
-        <CardHeader className="pb-2">
-          <div className="text-xs font-medium text-zinc-500">
-            Showing {paginated.length} of {filteredTransactions.length} transactions
-          </div>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="min-w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b text-zinc-600">
-                <th className="py-2 px-3 text-left font-medium">Transaction ID</th>
-                <th className="py-2 px-3 text-left font-medium">Date Run</th>
-                <th className="py-2 px-3 text-left font-medium">Status</th>
-                <th className="py-2 px-3 text-left font-medium">Amount</th>
-                <th className="py-2 px-3 text-left font-medium">Booking Jurisdiction</th>
-                <th className="py-2 px-3 text-left font-medium">Originator</th>
-                <th className="py-2 px-3 text-left font-medium">Beneficiary</th>
-                <th className="w-[40px]"></th>
+        <CardContent className="overflow-x-auto p-0">
+          <table className="min-w-full text-[13px] border-collapse">
+            <thead className="bg-zinc-50 border-b text-zinc-500 font-semibold">
+              <tr>
+                <th className="py-2 px-3">
+                  <Checkbox
+                    checked={selected.length === filtered.length && filtered.length > 0}
+                    onCheckedChange={(v) => toggleSelectAll(!!v)}
+                  />
+                </th>
+                <th className="py-2 px-3 text-left">ID / Time</th>
+                <th className="py-2 px-3 text-left">Client</th>
+                <th className="py-2 px-3 text-left">Amount</th>
+                <th className="py-2 px-3 text-left">Jurisdiction</th>
+                <th className="py-2 px-3 text-left">Regulator</th>
+                <th className="py-2 px-3 text-left">Flags</th>
+                <th className="py-2 px-3 text-left">Rule Hits</th>
+                <th className="py-2 px-3 text-left">Risk</th>
+                <th className="py-2 px-3 text-left">Status</th>
+                <th className="py-2 px-3 text-right"></th>
               </tr>
             </thead>
+
             <tbody>
-              {paginated.map((t) => (
+              {filtered.map((t) => (
                 <tr
                   key={t.id}
-                  onClick={() => router.push(`/aml/tx/${t.id}`)}
                   className={cn(
-                    'cursor-pointer border-b group transition-all',
-                    'hover:bg-zinc-100 active:bg-zinc-200'
+                    'border-b transition hover:bg-zinc-50',
+                    selected.includes(t.id) && 'bg-blue-50'
                   )}
                 >
-                  <td className="py-3 px-3 font-mono text-zinc-800">{t.id}</td>
-                  <td className="py-3 px-3 text-zinc-700">{t.date}</td>
-                  <td className="py-3 px-3">{getStatusBadge(t.status)}</td>
-                  <td className="py-3 px-3 text-zinc-700">{t.variables?.amount ?? '-'}</td>
-                  <td className="py-3 px-3 text-zinc-700">{t.variables?.booking_jurisdiction ?? '-'}</td>
-                  <td className="py-3 px-3 text-zinc-700">{t.variables?.originator_country ?? '-'}</td>
-                  <td className="py-3 px-3 text-zinc-700">{t.variables?.beneficiary_country ?? '-'}</td>
-                  <td className="py-3 px-3 text-right">
-                    {/* ✨ Chevron animates to the right on hover */}
-                    <ChevronRight
-                      className="w-4 h-4 text-zinc-400 transition-transform duration-200 ease-in-out group-hover:translate-x-1"
+                  <td className="py-2 px-3">
+                    <Checkbox
+                      checked={selected.includes(t.id)}
+                      onCheckedChange={() => toggleSelect(t.id)}
                     />
+                  </td>
+                  <td className="py-2 px-3 font-mono text-[12px]">
+                    {t.id}
+                    <div className="text-xs text-zinc-500">{t.date}</div>
+                  </td>
+                  <td className="py-2 px-3">{t.variables?.originator_country ?? '-'}</td>
+                  <td className="py-2 px-3">
+                    {t.variables?.amount
+                      ? Number(t.variables.amount).toLocaleString()
+                      : '-'}
+                  </td>
+                  <td className="py-2 px-3">{t.variables?.booking_jurisdiction ?? '-'}</td>
+                  <td className="py-2 px-3">{t.variables?.regulator ?? '—'}</td>
+                  <td className="py-2 px-3">
+                    {t.variables?.flags?.length ? (
+                      <div className="flex flex-wrap gap-1">
+                        {t.variables.flags.map((flag) => (
+                          <Badge
+                            key={flag}
+                            className="bg-red-100 text-red-700 border border-red-200 text-[11px]"
+                          >
+                            {flag}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-zinc-400">—</span>
+                    )}
+                  </td>
+
+                  <td className="py-2 px-3">
+                    {t.variables?.rule_hits?.length ? (
+                      <div className="flex flex-wrap gap-1">
+                        {[...t.variables.rule_hits]
+                          .sort((a, b) => a.localeCompare(b))
+                          .map((hit) => (
+                            <Badge
+                              key={hit}
+                              className="bg-blue-100 text-blue-700 border border-blue-200 text-[11px]"
+                            >
+                              {hit}
+                            </Badge>
+                          ))}
+                      </div>
+                    ) : (
+                      <span className="text-zinc-400">—</span>
+                    )}
+                  </td>
+
+                  <td className="py-2 px-3">—</td>
+                  <td className="py-2 px-3">{getStatusBadge(t.status)}</td>
+                  <td className="py-2 px-3 text-right">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => router.push(`/aml/tx/${t.id}`)}
+                      className="text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 border"
+                    >
+                      Details
+                      <ChevronRightIcon />
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -141,29 +267,33 @@ export default function TransactionsClient({ transactions }: TransactionsClientP
       </Card>
 
       {/* ===== Pagination ===== */}
-      <div className="flex justify-end items-center gap-3 text-sm text-zinc-600">
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={page === 1}
-          onClick={() => setPage((p) => p - 1)}
-          className="h-7 w-7"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-        <span>
-          Page {page} of {totalPages}
-        </span>
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={page === totalPages}
-          onClick={() => setPage((p) => p + 1)}
-          className="h-7 w-7"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
+      {pagination && (
+        <div className="flex justify-end items-center gap-3 text-sm text-zinc-600">
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!pagination.startCursor}
+            onClick={onPrevPage}
+            className="h-7 w-7"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+
+          <span>
+            Showing {transactions.length} of {pagination.totalItems}
+          </span>
+
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={!pagination.endCursor}
+            onClick={onNextPage}
+            className="h-7 w-7"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

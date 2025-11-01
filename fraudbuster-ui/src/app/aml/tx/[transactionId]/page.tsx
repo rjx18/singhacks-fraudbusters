@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import AMLFlowChart from "./AMLFlowChart"
-import { AML_NODES } from "@/constants/nodes"
+import { AML_EDGES, AML_NODES } from "@/constants/nodes"
 
 // Helper to fetch transaction details
 async function fetchTransaction(transactionId: string) {
@@ -92,9 +92,56 @@ function injectVariablesIntoNodes(nodes: any[], variables: Record<string, any>) 
         result: testResults[item.id] ?? null,
       }))
     }
+
+    // ✅ Inject AI assessment if present
+    if ((nodeId === "ai" || nodeId === "transaction_passed") && parsedVars.assessment) {
+      node.data.assessment = parsedVars.assessment
+    }
+
+    if (nodeId === "flagged" && parsedVars.assessment) {
+      node.data.assessment = parsedVars.assessment
+
+      if (parsedVars.review) {
+        node.data.review = parsedVars.review
+      }
+    }
   }
 
   return clonedNodes
+}
+
+
+function injectEdgeStatuses(edges: any[], nodes: any[]) {
+  // Create a lookup for quick access to node statuses
+  const nodeStatusMap: Record<string, string | undefined> = {}
+  for (const node of nodes) {
+    nodeStatusMap[node.id] = node.data?.overall_status
+  }
+
+  // Deep clone edges so you don't mutate AML_EDGES
+  const clonedEdges = structuredClone(edges)
+
+  for (const edge of clonedEdges) {
+    const sourceStatus = nodeStatusMap[edge.source]
+    const targetStatus = nodeStatusMap[edge.target]
+
+    // Decide edge status based on source → target
+    let edgeStatus: string | undefined
+    if (sourceStatus === "fail") {
+      edgeStatus = "fail"
+    } else if (sourceStatus === "pass") {
+      edgeStatus = "pass"
+    } else if (targetStatus === "fail") {
+      edgeStatus = "fail"
+    } else if (targetStatus === "pass") {
+      edgeStatus = "pass"
+    }
+
+    // Inject into edge.data
+    edge.data = { ...(edge.data || {}), status: edgeStatus }
+  }
+
+  return clonedEdges
 }
 
 
@@ -119,6 +166,7 @@ export default async function TransactionPage(props: {
 
   const variables = transaction.variables || {}
   const injectedNodes = injectVariablesIntoNodes(AML_NODES, variables)
+  const injectedEdges = injectEdgeStatuses(AML_EDGES, injectedNodes)
 
-  return <AMLFlowChart nodes={injectedNodes} variables={variables} />
+  return <AMLFlowChart transactionId={transactionId} nodes={injectedNodes} edges={injectedEdges} variables={variables} />
 }
