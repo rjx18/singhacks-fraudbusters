@@ -1,0 +1,35 @@
+/* Hide scrollbar for Chrome, Safari and Opera */
+
+.infoPanel::-webkit-scrollbar {
+  width: 20px;
+}
+
+.infoPanel::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.infoPanel::-webkit-scrollbar-thumb {
+  background-color: #525252;
+  border-radius: 20px;
+  border: 6px solid transparent;
+  background-clip: content-box;
+}
+
+.infoPanel::-webkit-scrollbar-thumb:hover {
+  background-color: #525252;
+}
+
+
+.textarea {
+  flex-grow: 1;
+  border: 2px solid transparent;
+  border-color: #3a3a3a;
+  background-color: #292929;
+  field-sizing: content;
+}
+
+.textarea:focus {
+  outline: none !important;
+  border-color: #8b8b8b;
+  background-color: #414141;
+}
