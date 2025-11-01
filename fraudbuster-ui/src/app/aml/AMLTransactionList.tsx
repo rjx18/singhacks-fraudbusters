@@ -14,12 +14,13 @@ import { cn } from '@/lib/utils'
 import AddTransactionDialog from './AddTransactionDialog'
 import TransactionsHeader from './AMLTransactionsHeader'
 
-type AMLStatus = 'Fraud Detected' | 'Need Advise' | 'Success'
+type AMLStatus = 'In Progress' | 'Need Advice' | 'Success'
 
 interface AMLTransaction {
   id: string
   date: string
-  regulator?: string
+  regulator: string
+  state: string
   status: AMLStatus
   variables?: {
     amount?: number | string | null
@@ -29,6 +30,7 @@ interface AMLTransaction {
     beneficiary_country?: string | null
     flags?: string[]
     rule_hits?: string[]
+    regulator?: string
   }
 }
 
@@ -72,6 +74,11 @@ export default function TransactionsClient({ transactions, pagination, onNextPag
     })
   }, [transactions, jurisdiction, statusFilter, dateRange, amountMin])
 
+  const statusStyles: Record<string, string> = {
+    ACTIVE: "bg-yellow-100 text-yellow-800 border border-yellow-200",
+    COMPLETED: "bg-green-100 text-green-800 border border-green-200",
+    TERMINATED: "bg-zinc-100 text-zinc-700 border border-zinc-200",
+  };
 
   // ===== Selection =====
   const toggleSelect = (id: string) => {
@@ -88,10 +95,10 @@ export default function TransactionsClient({ transactions, pagination, onNextPag
   // ===== Status Colors =====
   const getStatusBadge = (status: AMLStatus) => {
     switch (status) {
-      case 'Fraud Detected':
+      case 'Need Advice':
         return <Badge className="bg-red-100 text-red-700 border border-red-200">Needs Review</Badge>
-      case 'Need Advise':
-        return <Badge className="bg-amber-100 text-amber-700 border border-amber-200">Queued</Badge>
+      case 'In Progress':
+        return <Badge className="bg-amber-100 text-amber-700 border border-amber-200">In Progress</Badge>
       case 'Success':
         return <Badge className="bg-green-100 text-green-700 border border-green-200">Cleared</Badge>
     }
@@ -175,8 +182,8 @@ export default function TransactionsClient({ transactions, pagination, onNextPag
                   <th className="py-2 px-3 text-left">Regulator</th>
                   <th className="py-2 px-3 text-left">Flags</th>
                   <th className="py-2 px-3 text-left">Rule Hits</th>
-                  <th className="py-2 px-3 text-left">Risk</th>
                   <th className="py-2 px-3 text-left">Status</th>
+                  <th className="py-2 px-3 text-left">Result</th>
                   <th className="py-2 px-3 text-right"></th>
                 </tr>
               </thead>
@@ -243,8 +250,17 @@ export default function TransactionsClient({ transactions, pagination, onNextPag
                         <span className="text-zinc-400">—</span>
                       )}
                     </td>
-
-                    <td className="py-2 px-3">—</td>
+                    <td className="py-2 px-3">
+                      {t.state && (
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            statusStyles[t.state] || "bg-zinc-50 text-zinc-500 border border-zinc-200"
+                          }`}
+                        >
+                          {t.state.charAt(0).toUpperCase() + t.state.slice(1).toLowerCase()}
+                        </span>
+                      )}
+                    </td>
                     <td className="py-2 px-3">{getStatusBadge(t.status)}</td>
                     <td className="py-2 px-3 text-right">
                       <Button

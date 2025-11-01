@@ -67,16 +67,27 @@ async function fetchTransactions(after?: string, before?: string) {
       .map(([ruleId]) => ruleId)
       .sort()
 
-    const hasFail = ruleHits.length > 0
-    const hasNeedsAdvice = Object.values(sectionStatuses).some((v) => v === 'needs_advice')
+    const assessmentValue = variables?.find((v: any) => v.name === 'assessment')?.value;
+    const assessment = (() => {
+      try {
+        return assessmentValue ? JSON.parse(assessmentValue) : null;
+      } catch {
+        return null;
+      }
+    })();
 
-    const status: 'Fraud Detected' | 'Need Advise' | 'Success' =
-      hasFail ? 'Fraud Detected' : hasNeedsAdvice ? 'Need Advise' : 'Success'
+    const status: 'Success' | 'Need Advice' | 'In Progress' =
+      assessment?.final_status === 'pass'
+        ? 'Success'
+        : assessment?.final_status === 'fail'
+        ? 'Need Advice'
+        : 'In Progress';
 
     return {
       id: t.processInstanceKey || t.id,
       date: t.startDate || new Date().toISOString(),
       status,
+      state: t.state,
       variables: {
         amount: dataObj.amount ?? null,
         booking_jurisdiction: dataObj.booking_jurisdiction ?? null,

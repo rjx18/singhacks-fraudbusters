@@ -98,8 +98,7 @@ export default function ReviewPanel({ transactionId, variables }: ReviewPanelPro
       })
 
       if (!res.ok) throw new Error('Failed to submit review')
-      toast.success('Review submitted successfully!')
-      router.refresh()
+      router.push(`/aml/tx/${transactionId}`)
     } catch (err) {
       console.error(err)
       toast.error('Error submitting review.')

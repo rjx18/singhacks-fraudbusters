@@ -47,7 +47,7 @@ export default function AddTransactionDialog() {
 
     setIsUploading(true)
     try {
-      const res = await fetch('/api/transactions', {
+      const res = await fetch('/api/transactions/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: csvData }),
