@@ -1,231 +1,292 @@
-import { EdgeLabelRenderer, getBezierPath, Position, useInternalNode } from '@xyflow/react';
+'use client'
+
+import { EdgeLabelRenderer, getBezierPath, Position } from '@xyflow/react'
 import colors from 'tailwindcss/colors'
-import { classNames, getEdgeParams } from '@/app/utils';
+import { useSearchParams } from 'next/navigation'
 
-function FloatingEdge({ id, source, target, markerEnd, style, data }: any) {
-  const sourceNode = useInternalNode(source);
-  const targetNode = useInternalNode(target);
+type EdgeProps = {
+  id: string
+  source: string
+  target: string
+  sourceX: number
+  sourceY: number
+  targetX: number
+  targetY: number
+  sourcePosition?: Position
+  targetPosition?: Position
+  data?: any
+  style?: React.CSSProperties
+  className?: string
+}
 
-  if (!sourceNode || !targetNode) {
-    return null;
+/**
+ * Get edge color based on data
+ */
+function getColor(data?: any) {
+  if (data?.color === 'inbound') return colors.cyan[600]
+  if (data?.color === 'outbound') return colors.red[600]
+  return colors.zinc[400]
+}
+
+/**
+ * Smooth vertical offset for more natural Bezier curvature
+ */
+function getAdjustedY(sourceY: number, targetY: number) {
+  const dy = targetY - sourceY
+  const yOffset = Math.max(Math.min(dy * 0.1, 20), -20)
+  return {
+    adjustedSourceY: sourceY + yOffset / 2,
+    adjustedTargetY: targetY - yOffset / 2,
   }
+}
 
-  const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(
-    sourceNode,
-    targetNode,
-  );
+/**
+ * Compute edge opacity based on selected node
+ */
+function useEdgeOpacity(source: string, target: string) {
+  const searchParams = useSearchParams()
+  const selectedNode = searchParams.get('node')
+
+  // No node selected → all visible
+  if (!selectedNode) return '80%'
+
+  // Highlight edges connected to selected node
+  if (selectedNode === source || selectedNode === target) return '80%'
+
+  // Fade unrelated edges
+  return '20%'
+}
+
+/**
+ * Default Floating Edge (Right → Left)
+ */
+export default function FloatingEdge({
+  id,
+  source,
+  target,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  data,
+  style,
+  className,
+}: EdgeProps) {
+  const { adjustedSourceY, adjustedTargetY } = getAdjustedY(sourceY, targetY)
+  const color = getColor(data)
+  const opacity = useEdgeOpacity(source, target)
 
   const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX: sx,
-    sourceY: sy,
-    sourcePosition: sourcePos,
-    targetPosition: targetPos,
-    targetX: tx,
-    targetY: ty,
-  });
+    sourceX,
+    sourceY: adjustedSourceY,
+    targetX,
+    targetY: adjustedTargetY,
+    sourcePosition: sourcePosition ?? Position.Right,
+    targetPosition: targetPosition ?? Position.Left,
+  })
 
-  const getColor = () => {
-    if (data !== undefined) {
-      if (data.color === 'inbound') return colors.cyan[600];
-      if (data.color  === 'outbound') return colors.red[600];
-    }
-    return colors.neutral[500];
-  }
-
-  const markerId = `arrow-${id}`;
+  const markerId = `arrow-${id}`
+  const strokeDasharray = style?.strokeDasharray ?? '5 15'
+  const strokeWidth = style?.strokeWidth ?? 2
 
   return (
     <g className="react-flow__edge">
-      {/* Define the marker inside an <svg> */}
       <svg>
         <defs>
-          <marker
-            id={markerId}
-            markerWidth="3"
-            markerHeight="3"
-            refX="3"
-            refY="1.5"
-            orient="auto"
-          >
-            <polygon points="0 0, 3 1.5, 0 3" fill={getColor()} />
+          <marker id={markerId} markerWidth="3" markerHeight="3" refX="3" refY="1.5" orient="auto">
+            <polygon points="0 0, 3 1.5, 0 3" fill={color} />
           </marker>
         </defs>
       </svg>
+
       <path
         id={id}
-        className="react-flow__edge-path"
         d={edgePath}
         markerEnd={`url(#${markerId})`}
-        style={{...style, 
-          stroke: getColor(), 
-          opacity: data && data.transparent ? "20%" : "80%",
+        className={`react-flow__edge-path ${className ?? ''}`}
+        style={{
+          ...style,
+          stroke: color,
+          strokeWidth,
+          strokeDasharray,
+          fill: 'none',
+          opacity,
+          transition: 'opacity 0.3s ease-in-out',
         }}
       />
-      { data && data.label && <EdgeLabelRenderer>
-        <div
-          key={`${markerId}-label`}
-          style={{
-            position: 'absolute',
-            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-          }}
-          className="nodrag nopan rounded-md pointer-events-auto bg-neutral-200 opacity-90 px-1 pt-1 text-neutral-800 shadow z-10 hover:z-20 hover:opacity-100"
-        >
-          {data.label}
-        </div>
-      </EdgeLabelRenderer>}
+
+      {data?.label && (
+        <EdgeLabelRenderer>
+          <div
+            key={`${markerId}-label`}
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            }}
+            className="nodrag nopan rounded-md pointer-events-auto bg-neutral-200 opacity-90 px-1 pt-1 text-neutral-800 shadow z-10 hover:z-20 hover:opacity-100"
+          >
+            {data.label}
+          </div>
+        </EdgeLabelRenderer>
+      )}
     </g>
-  );
+  )
 }
 
-
-export function TargetRightEdge({ id, source, target, markerEnd, style, data }: any) {
-  const sourceNode = useInternalNode(source);
-  const targetNode = useInternalNode(target);
-
-  if (!sourceNode || !targetNode) {
-    return null;
-  }
-
-  const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(
-    sourceNode,
-    targetNode
-  );
+/**
+ * Edge variant: TargetRightEdge (forces target to connect at RIGHT)
+ */
+export function TargetRightEdge({
+  id,
+  source,
+  target,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  data,
+  style,
+  className,
+}: EdgeProps) {
+  const { adjustedSourceY, adjustedTargetY } = getAdjustedY(sourceY, targetY)
+  const color = getColor(data)
+  const opacity = useEdgeOpacity(source, target)
 
   const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX: sx,
-    sourceY: sy,
-    sourcePosition: sourcePos,
+    sourceX,
+    sourceY: adjustedSourceY,
+    targetX,
+    targetY: adjustedTargetY,
+    sourcePosition: sourcePosition ?? Position.Right,
     targetPosition: Position.Right,
-    targetX: targetNode.internals.positionAbsolute.x + (targetNode.measured.width || 0),
-    targetY: targetNode.internals.positionAbsolute.y + (targetNode.measured.height || 0) / 3,
-  });
+  })
 
-  const getColor = () => {
-    if (data !== undefined) {
-      if (data.color === 'inbound') return colors.cyan[600];
-      if (data.color  === 'outbound') return colors.red[600];
-    }
-    return colors.neutral[500];
-  }
-
-  const markerId = `arrow-${id}`;
+  const markerId = `arrow-${id}`
+  const strokeDasharray = style?.strokeDasharray ?? '5 15'
+  const strokeWidth = style?.strokeWidth ?? 2
 
   return (
     <g className="react-flow__edge">
-      {/* Define the marker inside an <svg> */}
       <svg>
         <defs>
-          <marker
-            id={markerId}
-            markerWidth="3"
-            markerHeight="3"
-            refX="3"
-            refY="1.5"
-            orient="auto"
-          >
-            <polygon points="0 0, 3 1.5, 0 3" fill={getColor()} />
+          <marker id={markerId} markerWidth="3" markerHeight="3" refX="3" refY="1.5" orient="auto">
+            <polygon points="0 0, 3 1.5, 0 3" fill={color} />
           </marker>
         </defs>
       </svg>
+
       <path
         id={id}
-        className="react-flow__edge-path"
         d={edgePath}
         markerEnd={`url(#${markerId})`}
-        style={{...style, 
-          stroke: getColor(), 
-          opacity: data && data.transparent ? "20%" : "80%",
+        className={`react-flow__edge-path ${className ?? ''}`}
+        style={{
+          ...style,
+          stroke: color,
+          strokeWidth,
+          strokeDasharray,
+          fill: 'none',
+          opacity,
+          transition: 'opacity 0.3s ease-in-out',
         }}
       />
-      { data && data.label && <EdgeLabelRenderer>
-        <div
-          key={`${markerId}-label`}
-          style={{
-            position: 'absolute',
-            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-          }}
-          className="nodrag nopan rounded-md pointer-events-auto bg-neutral-200 opacity-90 px-1 pt-1 text-neutral-800 shadow z-10 hover:z-20 hover:opacity-100"
-        >
-          {data.label}
-        </div>
-      </EdgeLabelRenderer>}
+
+      {data?.label && (
+        <EdgeLabelRenderer>
+          <div
+            key={`${markerId}-label`}
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            }}
+            className="nodrag nopan rounded-md pointer-events-auto bg-neutral-200 opacity-90 px-1 pt-1 text-neutral-800 shadow z-10 hover:z-20 hover:opacity-100"
+          >
+            {data.label}
+          </div>
+        </EdgeLabelRenderer>
+      )}
     </g>
-  );
+  )
 }
 
-export function SourceRightEdge({ id, source, target, markerEnd, style, data }: any) {
-  const sourceNode = useInternalNode(source);
-  const targetNode = useInternalNode(target);
-
-  if (!sourceNode || !targetNode) {
-    return null;
-  }
-
-  const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(
-    sourceNode,
-    targetNode
-  );
+/**
+ * Edge variant: SourceRightEdge (forces source to leave from RIGHT)
+ */
+export function SourceRightEdge({
+  id,
+  source,
+  target,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  data,
+  style,
+  className,
+}: EdgeProps) {
+  const { adjustedSourceY, adjustedTargetY } = getAdjustedY(sourceY, targetY)
+  const color = getColor(data)
+  const opacity = useEdgeOpacity(source, target)
 
   const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX: sourceNode.internals.positionAbsolute.x + (sourceNode.measured.width || 0),
-    sourceY: sourceNode.internals.positionAbsolute.y + 2 * (sourceNode.measured.height || 0) / 3,
+    sourceX,
+    sourceY: adjustedSourceY,
+    targetX,
+    targetY: adjustedTargetY,
     sourcePosition: Position.Right,
-    targetPosition: targetPos,
-    targetX: tx,
-    targetY: ty,
-  });
+    targetPosition: targetPosition ?? Position.Left,
+  })
 
-  const getColor = () => {
-    if (data !== undefined) {
-      if (data.color === 'inbound') return colors.cyan[600];
-      if (data.color  === 'outbound') return colors.red[600];
-    }
-    return colors.neutral[500];
-  }
-
-  const markerId = `arrow-${id}`;
+  const markerId = `arrow-${id}`
+  const strokeDasharray = style?.strokeDasharray ?? '5 15'
+  const strokeWidth = style?.strokeWidth ?? 2
 
   return (
     <g className="react-flow__edge">
-      {/* Define the marker inside an <svg> */}
       <svg>
         <defs>
-          <marker
-            id={markerId}
-            markerWidth="3"
-            markerHeight="3"
-            refX="3"
-            refY="1.5"
-            orient="auto"
-          >
-            <polygon points="0 0, 3 1.5, 0 3" fill={getColor()} />
+          <marker id={markerId} markerWidth="3" markerHeight="3" refX="3" refY="1.5" orient="auto">
+            <polygon points="0 0, 3 1.5, 0 3" fill={color} />
           </marker>
         </defs>
       </svg>
+
       <path
         id={id}
-        className="react-flow__edge-path"
         d={edgePath}
         markerEnd={`url(#${markerId})`}
-        style={{...style, 
-          stroke: getColor(), 
-          opacity: data && data.transparent ? "20%" : "80%",
+        className={`react-flow__edge-path ${className ?? ''}`}
+        style={{
+          ...style,
+          stroke: color,
+          strokeWidth,
+          strokeDasharray,
+          fill: 'none',
+          opacity,
+          transition: 'opacity 0.3s ease-in-out',
         }}
       />
-      { data && data.label && <EdgeLabelRenderer>
-        <div
-          key={`${markerId}-label`}
-          style={{
-            position: 'absolute',
-            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-          }}
-          className="nodrag nopan rounded-md pointer-events-auto bg-neutral-200 opacity-90 px-1 pt-1 text-neutral-800 shadow z-10 hover:z-20 hover:opacity-100"
-        >
-          {data.label}
-        </div>
-      </EdgeLabelRenderer>}
-    </g>
-  );
-}
 
-export default FloatingEdge;
+      {data?.label && (
+        <EdgeLabelRenderer>
+          <div
+            key={`${markerId}-label`}
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            }}
+            className="nodrag nopan rounded-md pointer-events-auto bg-neutral-200 opacity-90 px-1 pt-1 text-neutral-800 shadow z-10 hover:z-20 hover:opacity-100"
+          >
+            {data.label}
+          </div>
+        </EdgeLabelRenderer>
+      )}
+    </g>
+  )
+}

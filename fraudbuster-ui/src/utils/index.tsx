@@ -1,8 +1,8 @@
 import { Position, MarkerType } from '@xyflow/react';
 import yaml from 'js-yaml'
 import React, { Children, isValidElement, ReactNode, ReactElement, JSXElementConstructor } from 'react';
-import AzureLogo from '../components/AzureLogo';
-import AWSLogo from '../components/AWSLogo';
+// import AzureLogo from '../components/AzureLogo';
+// import AWSLogo from '../components/AWSLogo';
 
 // this helper function returns the intersection point
 // of the line between the center of the intersectionNode and the target node
@@ -213,8 +213,8 @@ interface ElementData {
 }
 
 const componentMap: { [key: string]: JSXElementConstructor<any> } = {
-  AzureLogo,
-  AWSLogo
+  // AzureLogo,
+  // AWSLogo
   // Add other components here as needed
 };
 

@@ -1,229 +1,163 @@
-'use'
+'use client'
 
-import { ENGAGE_NODE_INFO } from '@/app/info/nodes'
-import { classNames, generateYamlFromReactNode, safeAccess } from '@/app/utils'
-import { Button } from '@headlessui/react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
-import React, { ReactNode, useEffect, useRef, useState } from 'react'
-import { InfoContentProps } from './types'
-import styles from './index.module.css'
-import Link from 'next/link'
-import Message, { MessageProps } from '../message-item'
-import { AssistantStream } from "openai/lib/AssistantStream";
-import Markdown from "react-markdown";
-// @ts-expect-error - no types for this yet
-import { AssistantStreamEvent } from "openai/resources/beta/assistants/assistants";
-import { RequiredActionFunctionToolCall } from "openai/resources/beta/threads/runs/runs";
-import { handleReadableStream, sendMessage, submitActionResult } from './handlers'
+import { useRouter, useSearchParams } from 'next/navigation'
+import React from 'react'
+import { AML_RULE_DESCRIPTIONS } from '@/constants/checks'
+import ReactMarkdown from 'react-markdown'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { ExternalLink, X } from 'lucide-react'
 
-export const InfoContent = ({title, description, children}: InfoContentProps) => {
-
-  const [userInput, setUserInput] = useState("");
-  const [messages, setMessages] = useState([] as MessageProps[]);
-  const [inputDisabled, setInputDisabled] = useState(false);
-  const [isSaving, setIsSaving] = useState(false)
-  const [threadId, setThreadId] = useState("");
-  const [firstLaunch, setFirstLaunch] = useState(true)
-
-  
-  // automatically scroll to bottom of chat
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
-  };
-
-  useEffect(() => {
-    if (firstLaunch) {
-      setFirstLaunch(false)
-    } else {
-      scrollToBottom();
-    }
-  }, [messages]);
-
-  // create a new threadID when chat component created
-  useEffect(() => {
-    const createThread = async () => {
-      const res = await fetch(`/api/assistants/threads`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      // const data = await openai.beta.threads.create()
-      setThreadId(data.threadId);
-    };
-    
-    createThread();
-  }, []);
-
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
-    doSubmit();
-  };
-
-  const doSubmit = () => {
-    if (!userInput.trim()) return;
-
-    const inputAndContext = `
-    ###########################################
-    CONTEXT:
-    Current system name: ${title}
-    Current system description: ${description}
-    Current system context:
-    ${generateYamlFromReactNode(children)}
-
-    ###########################################
-    ACTION:
-    ${userInput}
-    `
-
-    sendMessage(threadId, inputAndContext).then((stream) => {
-      handleReadableStream(stream, inputStreamHandlers)
-    });
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { role: "user", text: userInput },
-    ]);
-    setUserInput("");
-    setInputDisabled(true);
-    scrollToBottom();
-  }
-
-  /*************************/
-  /* Stream Event Handlers */
-  /*************************/
-
-  // textCreated - create new assistant message
-  const handleTextCreated = () => {
-    appendMessage("assistant", "");
-  };
-
-  // textDelta - append text to last assistant message
-  const handleTextDelta = (delta: any) => {
-    if (delta.value != null) {
-      appendToLastMessage(delta.value);
-    };
-    if (delta.annotations != null) {
-      annotateLastMessage(delta.annotations);
-    }
-  };
-
-  // imageFileDone - show image in chat
-  const handleImageFileDone = (image: any) => {
-    appendToLastMessage(`\n![${image.file_id}](/api/files/${image.file_id})\n`);
-  }
-
-  // handleRequiresAction - handle function call
-
-  // handleRunCompleted - re-enable the input form
-  const handleRunCompleted = () => {
-    setInputDisabled(false);
-  };
-
-  const inputStreamHandlers = {
-    handleTextCreated,
-    handleTextDelta,
-    handleImageFileDone,
-    handleRunCompleted
-  }
-
-  /*
-    =======================
-    === Utility Helpers ===
-    =======================
-  */
-
-  const appendToLastMessage = (text: string) => {
-    setMessages((prevMessages) => {
-      const lastMessage = prevMessages[prevMessages.length - 1];
-      const updatedLastMessage = {
-        ...lastMessage,
-        text: lastMessage.text + text,
-      };
-      return [...prevMessages.slice(0, -1), updatedLastMessage];
-    });
-  };
-
-  const appendMessage = (role: any, text: any) => {
-    setMessages((prevMessages) => [...prevMessages, { role, text }]);
-  };
-
-  const submitOnEnter = (e: any) => {
-    if (e.key === "Enter" && e.shiftKey == false) {
-      e.preventDefault()
-      return doSubmit();
-    }
-  }
-
-  const annotateLastMessage = (annotations: any) => {
-    setMessages((prevMessages) => {
-      const lastMessage = prevMessages[prevMessages.length - 1];
-      const updatedLastMessage = {
-        ...lastMessage,
-      };
-      annotations.forEach((annotation: any) => {
-        if (annotation.type === 'file_path') {
-          updatedLastMessage.text = updatedLastMessage.text.replaceAll(
-            annotation.text,
-            `/api/files/${annotation.file_path.file_id}`
-          );
-        }
-      })
-      return [...prevMessages.slice(0, -1), updatedLastMessage];
-    });
-  }
-
-  return <>
-    <div className="w-full space-y-4 px-4 py-4 mb-20">
-      <div>
-        <h3 className="text-2xl font-bold text-white">
-          {title}
-        </h3>
-      </div>
-      <div className='space-y-6'>
-        <div className="space-y-1">
-          <h6 className="text-sm font-bold">
-            Description
-          </h6>
-          <p>
-            {description}
-          </p>
-        </div>
-        {
-          children
-        }
-        <div className={`${styles.messages} w-full flex items-center`}>
-          <div className="w-full max-w-[700px] px-2 flex flex-col space-y-2 sm:space-y-4 justify-end">
-            {messages.map((msg, index) => (
-              <Message key={index} role={msg.role} text={msg.text} />
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
-      </div>
-    </div>
-    <form
-      onSubmit={handleSubmit}
-      className={`absolute bottom-[0%] flex w-full max-w-full px-4 pb-4 pt-8 bg-gradient-to-t from-neutral-900 to-transparent`}
-    >
-      <textarea
-        className={`${styles.textarea} grow px-2 py-3 mr-4 rounded-lg shadow-md`}
-        value={userInput}
-        onChange={(e) => setUserInput(e.target.value)}
-        placeholder="Ask me something..."
-        onKeyDown={submitOnEnter}
-      />
-      <div className="h-full flex items-end justify-end">
-        <button
-          type="submit"
-          className="p-3 bg-neutral-600 hover:bg-neutral-700 h-12 rounded-full text-white"
-          disabled={inputDisabled}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-          </svg>
-        </button>
-      </div>
-    </form>
-  </>
+// Jurisdiction logos
+const jurisdictionLogos: Record<string, string> = {
+  'MAS (Singapore)': '/logos/mas.svg',
+  'HKMA (Hong Kong)': '/logos/hkma.svg',
+  'FINMA (Switzerland)': '/logos/finma.svg',
+  'SFC (Hong Kong)': '/logos/sfc.svg',
+  'SECO (Switzerland)': '/logos/seco.svg',
+  'FATF': '/logos/fatf.svg',
+  'UN': '/logos/un.svg',
+  'EU': '/logos/eu.svg',
 }
 
-export default InfoContent
+interface InfoPanelProps {
+  variables?: Record<string, any>
+}
+
+export default function InfoPanel({ variables }: InfoPanelProps) {
+  const router = useRouter()
+  const params = useSearchParams()
+  const ruleId = params.get('rule')
+  const rule = ruleId ? AML_RULE_DESCRIPTIONS[ruleId] : null
+
+  // If no rule selected and no variables → don’t render
+  if (!rule) return null
+
+  const handleClose = () => {
+    const newParams = new URLSearchParams(params.toString())
+    newParams.delete('rule')
+    router.push(`?${newParams.toString()}`)
+  }
+
+  // Extract main transaction details if available
+  const txnData = variables?.data ?? null
+  const hasTxnData = txnData && typeof txnData === 'object'
+
+  return (
+    <Card className="fixed right-4 top-4 bottom-4 w-[420px] overflow-y-auto shadow-2xl border border-zinc-200 bg-white/95 backdrop-blur-sm z-[9999] p-4">
+      {/* ====== Header ====== */}
+      <CardHeader className="relative pb-3">
+        <button
+          onClick={handleClose}
+          className="absolute top-2 right-2 text-zinc-400 hover:text-zinc-700 transition"
+          aria-label="Close panel"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {rule && (
+          <>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {rule.jurisdictions.map((jur) => (
+                <Badge
+                  key={jur}
+                  className="flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200"
+                >
+                  {jurisdictionLogos[jur] && (
+                    <img
+                      src={jurisdictionLogos[jur]}
+                      alt={jur}
+                      className="w-3.5 h-3.5"
+                    />
+                  )}
+                  {jur}
+                </Badge>
+              ))}
+              <Badge className="bg-purple-50 text-purple-700 border border-purple-200">
+                {rule.category}
+              </Badge>
+            </div>
+
+            <CardTitle className="text-base font-semibold text-zinc-800 leading-snug">
+              {rule.title}
+            </CardTitle>
+          </>
+        )}
+      </CardHeader>
+
+      {/* ====== Rule Content ====== */}
+      {rule && (
+        <CardContent className="prose prose-sm max-w-none text-zinc-700">
+          <ReactMarkdown
+            components={{
+              code({ children }) {
+                return (
+                  <code className="px-1.5 py-0.5 rounded bg-zinc-100 text-amber-700 font-mono text-[0.8rem]">
+                    {children}
+                  </code>
+                )
+              },
+              strong({ children }) {
+                return <strong className="text-zinc-900 font-semibold">{children}</strong>
+              },
+              em({ children }) {
+                return <em className="text-zinc-600 italic">{children}</em>
+              },
+              p({ children }) {
+                return <p className="mb-2 text-[0.85rem] leading-relaxed">{children}</p>
+              },
+            }}
+          >
+            {rule.description}
+          </ReactMarkdown>
+
+          {/* ====== References ====== */}
+          {rule.references?.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {rule.references.map((ref) => (
+                <a
+                  key={ref.url}
+                  href={ref.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 bg-zinc-100 text-zinc-600 text-xs px-2 py-1 rounded-full border border-zinc-200 hover:bg-zinc-200 transition"
+                >
+                  {ref.label}
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      )}
+
+      {/* ====== Transaction Variables ====== */}
+      {hasTxnData && (
+        <CardContent className="mt-4 border-t border-zinc-200 pt-3 text-[0.85rem]">
+          <h3 className="text-sm font-semibold text-zinc-800 mb-2">Transaction Details</h3>
+
+          <div className="space-y-1 text-zinc-700">
+            <div><strong>ID:</strong> {txnData.transaction_id}</div>
+            <div><strong>Booking Jurisdiction:</strong> {txnData.booking_jurisdiction}</div>
+            <div><strong>Regulator:</strong> {txnData.regulator}</div>
+            <div><strong>Amount:</strong> {txnData.amount?.toLocaleString()} {txnData.currency}</div>
+            <div><strong>Channel:</strong> {txnData.channel}</div>
+            <div><strong>Originator Country:</strong> {txnData.originator_country}</div>
+            <div><strong>Beneficiary Country:</strong> {txnData.beneficiary_country}</div>
+            <div><strong>Booking Datetime:</strong> {txnData.booking_datetime}</div>
+          </div>
+
+          {/* Optional: a collapsible advanced view */}
+          <details className="mt-3">
+            <summary className="cursor-pointer text-sm text-blue-600 hover:underline">
+              Show all fields
+            </summary>
+            <pre className="mt-2 bg-zinc-50 border border-zinc-200 rounded p-2 text-xs overflow-x-auto">
+              {JSON.stringify(txnData, null, 2)}
+            </pre>
+          </details>
+        </CardContent>
+      )}
+    </Card>
+  )
+}

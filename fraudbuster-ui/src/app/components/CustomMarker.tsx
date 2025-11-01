@@ -1,7 +1,7 @@
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
 import React, { ReactNode } from 'react'
 import Accordion from './Accordion'
-import { classNames } from '../utils'
+import { classNames } from '@/utils'
 
 interface CustomMarkerProps {
   title: string

@@ -1,68 +1,50 @@
 'use client'
 
-import { ReactFlow, Controls, Background, NodeProps, applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import SystemNode from './components/SystemNode';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import CustomBezierEdge from './components/CustomEdge';
-import FloatingEdge, { SourceRightEdge, TargetRightEdge } from './components/FloatingEdge';
-// import { useNodesAndEdges } from '@/app/contexts/Nodes'
-import ControlPanel from './components/ControlPanel';
+import { ReactFlow, Controls, Background } from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+import SystemNode from './components/SystemNode'
+import CustomBezierEdge from './components/CustomEdge'
+import FloatingEdge, { SourceRightEdge, TargetRightEdge } from './components/FloatingEdge'
+import { useMemo } from 'react'
+import { AML_EDGES, AML_NODES } from '@/constants/nodes'
+import InfoPanel from './components/InfoPanel'
 
-export default function RootPage() {
-  const nodeTypes = useMemo(() => ({ systemNode: SystemNode }), []);
+export default function AMLPage() {
+  const nodeTypes = useMemo(() => ({ systemNode: SystemNode }), [])
 
-  const edgeTypes = useMemo(() => ({ custom: CustomBezierEdge, floating: FloatingEdge, targetright: TargetRightEdge, sourceright: SourceRightEdge }), []);
+  const edgeTypes = useMemo(
+    () => ({
+      custom: CustomBezierEdge,
+      floating: FloatingEdge,
+      targetright: TargetRightEdge,
+      sourceright: SourceRightEdge,
+    }),
+    []
+  )
 
-  const defaultViewport = { x: 500, y: 50, zoom: 0.75 };
-
-  const [nodes, edges, { handleUpdateNodes, handleUpdateEdges }] = useNodesAndEdges()
-
-  // useEffect(() => {
-  //   setNodes([...initialNodes, ...nodes])
-  // }, [initialNodes])
-
-  // useEffect(() => {
-  //   setEdges([...initialEdges, ...edges])
-  // }, [initialEdges])
-
-  const onNodesChange = 
-    (changes: any) => {
-      handleUpdateNodes(changes)
-    }
-
-  const onEdgesChange = useCallback(
-    (changes: any) => {
-      handleUpdateEdges(changes)
-    },
-    [],
-  );
+  const defaultViewport = { x: 500, y: 50, zoom: 0.75 }
 
   return (
-    <>  
-      <div>
-        <main className="w-screen h-screen">
-          <div style={{ height: '100%' }}>
-            <ReactFlow 
-              colorMode="dark" 
-              maxZoom={4} 
-              nodes={nodes} 
-              // onNodesChange={onNodesChange}
-              edges={edges}
-              // onEdgesChange={onEdgesChange}
-              nodeTypes={nodeTypes} 
-              edgeTypes={edgeTypes} 
-              defaultViewport={defaultViewport}
-            >
-              <Background />
-              <Controls />
-            </ReactFlow>
-          </div>
-        </main>
-      </div>
-      <div className='absolute top-4 left-4'>
-        <ControlPanel />
-      </div>
+    <>
+      <main className="relative w-screen h-screen bg-zinc-50">
+        <ReactFlow
+          colorMode="light"
+          maxZoom={4}
+          nodes={AML_NODES}
+          edges={AML_EDGES}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          defaultViewport={defaultViewport}
+        >
+          <Background />
+          <Controls className="!text-zinc-800 !fill-zinc-800" />
+        </ReactFlow>
+
+        {/* === InfoPanel appears when ?rule=XYZ === */}
+        <div className="absolute top-4 right-4 z-[9999]">
+          <InfoPanel />
+        </div>
+      </main>
     </>
-  );
+  )
 }

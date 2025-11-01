@@ -1,10 +1,10 @@
-import { useShowJARVISConnectionToggle } from '@/app/contexts/Nodes'
+// import { useShowJARVISConnectionToggle } from '@/app/contexts/Nodes'
 import { Switch } from '@headlessui/react'
 import { CircleStackIcon } from '@heroicons/react/24/outline'
 import React from 'react'
 
 function ControlPanel() {
-  const [showJARVISConnections, { toggleShowJARVISConnections }] = useShowJARVISConnectionToggle()
+  // const [showJARVISConnections, { toggleShowJARVISConnections }] = useShowJARVISConnectionToggle()
 
   return (
     <div>
@@ -17,8 +17,8 @@ function ControlPanel() {
         </h6>
         
         <Switch
-          checked={showJARVISConnections}
-          onChange={() => toggleShowJARVISConnections()}
+          // checked={showJARVISConnections}
+          // onChange={() => toggleShowJARVISConnections()}
           className="group relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 overflow-auto"
         >
           <span className="sr-only">Use setting</span>

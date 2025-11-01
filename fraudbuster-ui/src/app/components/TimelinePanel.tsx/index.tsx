@@ -1,7 +1,7 @@
-import { classNames, safeAccess } from '@/app/utils'
 import { Button } from '@headlessui/react'
 import React, { ReactNode } from 'react'
 import styles from './index.module.css'
+import { classNames } from '@/utils'
 
 function TimelinePanel() {
 

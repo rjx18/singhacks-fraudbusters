@@ -1,6 +1,6 @@
 import { Button } from '@headlessui/react'
 import React, { ReactNode } from 'react'
-import { classNames } from '../utils'
+import { classNames } from '@/utils'
 import { useRouter } from 'next/navigation'
 
 interface ProcessItemProps {
