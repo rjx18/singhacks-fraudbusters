@@ -135,13 +135,13 @@ export default function DocumentPage() {
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
       {/* Backend Status Banner */}
-      {!backendConnected && (
+      {/* {!backendConnected && (
         <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2">
           <div className="max-w-7xl mx-auto text-sm text-yellow-800">
             ⚠️ Backend service is not connected. Please ensure the Python backend is running at http://localhost:8000
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b">
@@ -210,7 +210,7 @@ export default function DocumentPage() {
 
       {/* Upload zone */}
       <div className="px-4 sm:px-6 lg:px-8 mt-4">
-        {!backendConnected && (
+        {/* {!backendConnected && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
             <div className="flex items-start gap-2">
               <div className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0">⚠️</div>
@@ -222,7 +222,7 @@ export default function DocumentPage() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
         <UploadBox
           onChoose={() => fileInputRef.current?.click()}
           onDropFiles={(files) => handleFiles(files)}

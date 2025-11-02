@@ -134,6 +134,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ transac
     }
 
     console.log(`[Camunda] Completing user task ${userTask.userTaskKey} with review data`);
+
+    console.log("[Camunda] userTaskKey:", userTask?.userTaskKey);
+    console.log("[Camunda] processInstanceKey:", processInstanceKey);
     const completeResult = await completeUserTask(token, userTask.userTaskKey, reviewBody);
 
     return NextResponse.json({
