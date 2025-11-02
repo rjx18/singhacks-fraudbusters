@@ -24,7 +24,7 @@ export default function DataPanel({ variables }: DataPanelProps) {
   const entries = Object.entries(parsedData)
 
   return (
-    <aside className="fixed left-64 top-0 h-screen w-80 border-r border-zinc-200 bg-white/90 backdrop-blur-sm z-40 flex flex-col">
+    <aside className="fixed left-64 top-0 h-screen w-80 border-r border-zinc-200 bg-white/90 backdrop-blur-sm z-30 flex flex-col">
       {/* ===== Header ===== */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-200 bg-zinc-50">
         <Database className="w-3.5 h-3.5 text-blue-700" />

@@ -105,7 +105,7 @@ export default function TransactionsClient({ transactions, pagination, onNextPag
   }
 
   return (
-    <div>
+    <div className="h-screen">
       <TransactionsHeader />
       <div className="p-6 space-y-4">
 
@@ -117,13 +117,15 @@ export default function TransactionsClient({ transactions, pagination, onNextPag
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All</SelectItem>
-              {[...new Set(transactions.map((t) => t.variables?.booking_jurisdiction))].map(
-                (j) => (
-                  <SelectItem key={j ?? 'Unknown'} value={j ?? 'Unknown'}>
-                    {j ?? 'Unknown'}
-                  </SelectItem>
-                )
-              )}
+                {[...new Set(transactions.map((t) => t.variables?.booking_jurisdiction || 'Unknown'))]
+                  .map((j) => {
+                    const value = j?.trim() || 'Unknown';
+                    return (
+                      <SelectItem key={value} value={value}>
+                        {value}
+                      </SelectItem>
+                    );
+                  })}
             </SelectContent>
           </Select>
 

@@ -43,7 +43,7 @@ export default function AIReportPanel({ variables }: AIReportPanelProps) {
 
   return (
     <>
-      <Card className="fixed right-4 top-4 bottom-4 w-[480px] overflow-y-auto shadow-2xl border border-zinc-200 bg-white backdrop-blur-sm z-[9999] p-5">
+      <Card className="fixed right-4 top-4 bottom-4 w-[480px] overflow-y-auto shadow-2xl border border-zinc-200 bg-white backdrop-blur-sm z-40 p-5">
         <CardHeader className="relative pb-3 border-b border-zinc-200">
           <button
             onClick={handleClose}
@@ -195,7 +195,7 @@ export default function AIReportPanel({ variables }: AIReportPanelProps) {
 
       {/* ===== Modal ===== */}
       <Dialog open={showFullReport} onOpenChange={setShowFullReport}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto z-[9999]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-blue-800">
               <FileText className="w-5 h-5 text-blue-700" />
