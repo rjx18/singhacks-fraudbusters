@@ -9,6 +9,7 @@ import json
 # You need to login to Azure subscription via Azure CLI and set the environment variables
 subscription_id = ""
 resource_group_name = ""
+resource_name=""
 project_name = ""  # Extracted from your URL
 # agent_id = ""
 
@@ -27,7 +28,7 @@ def run_non_deterministic(agent_id, message_text="Hello from Python!"):
         # Create an AIProjectClient instance
         print("🔐 Authenticating with Azure AI Foundry...")
         # Correct endpoint format: https://<ai-services-account>.services.ai.azure.com/api/projects/<project-name>
-        endpoint = f"https://aaf-aiproj-sitizapp-i01.services.ai.azure.com/api/projects/{project_name}"
+        endpoint = f"https://{resource_name}.services.ai.azure.com/api/projects/{project_name}"
         print(f"🌐 Using endpoint: {endpoint}")
         
         project_client = AIProjectClient(

@@ -395,9 +395,9 @@ async def main():
     print("Worker starting")
     
     # ADD YOUR CREDENTIALS HERE
-    grpc_channel = create_camunda_cloud_channel(client_id="",
-                                    client_secret="",
-                                    cluster_id="",
+    grpc_channel = create_camunda_cloud_channel(client_id='',
+                                    client_secret='',
+                                    cluster_id='',
                                     region="")
     worker = ZeebeWorker(grpc_channel)
     client = ZeebeClient(grpc_channel)

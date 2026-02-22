@@ -1,0 +1,5 @@
+pyzeebe>=0.26.0
+requests
+openai
+azure-ai-projects
+azure-identity
